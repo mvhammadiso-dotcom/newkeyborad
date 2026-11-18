@@ -1,5 +1,4 @@
-
-name: Build APK
+name: Build MROS Keyboard APK
 
 on:
   workflow_dispatch:
@@ -11,30 +10,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Check project files
+      - name: Extract project ZIP
         run: |
-          echo "Project files:"
-          ls -la
-          find . -maxdepth 3 -type f | head -100
+          mkdir -p project
+          unzip -q mros-keyboard-complete.zip -d project
 
-      - name: Grant permission
-        run: chmod +x ./gradlew
+      - name: Find Gradle project
+        run: |
+          GRADLE_FILE=$(find project -name gradlew -type f | head -1)
+
+          if [ -z "$GRADLE_FILE" ]; then
+            echo "ERROR: gradlew not found!"
+            find project -maxdepth 4 -type f
+            exit 1
+          fi
+
+          PROJECT_DIR=$(dirname "$GRADLE_FILE")
+          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
+          chmod +x "$GRADLE_FILE"
 
       - name: Build APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          cd "$PROJECT_DIR"
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Keyboard-APK
+          name: MROS-Keyboard-APK
           path: "**/build/outputs/apk/debug/*.apk"
           if-no-files-found: error
