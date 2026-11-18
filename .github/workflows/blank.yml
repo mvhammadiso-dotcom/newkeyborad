@@ -10,10 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: project/mros-keyboard
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,13 +20,26 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Extract ZIP
+        run: |
+          mkdir -p project
+          unzip -o mros-keyboard-complete.zip -d project
+          ls -la project
+
+      - name: Locate Android project
+        run: |
+          find project -name settings.gradle.kts
+          test -f project/mros-keyboard/settings.gradle.kts
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Generate Gradle Wrapper
+        working-directory: project/mros-keyboard
         run: gradle wrapper
 
-      - name: Build Debug APK
+      - name: Build APK
+        working-directory: project/mros-keyboard
         run: ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
